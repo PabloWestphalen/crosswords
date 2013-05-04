@@ -1,0 +1,32 @@
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+#wrapper {
+	border: solid 1px black;
+	width: 48em;
+	height: 40em;
+	margin: 1em auto;
+}
+
+input[type="text"] {
+	font-size: 2em;
+	width: 2em;
+	height: 2em;
+	border: solid 1px green;
+	padding: .5em;
+	text-transform: uppercase;
+	text-align: center;
+	margin-right: -6px;
+	margin-bottom: -1px;
+	position: absolute;
+
+}
+
+.x2 {
+	left: 2em;
+}
+.3y {
+	top: 3em;
+}
