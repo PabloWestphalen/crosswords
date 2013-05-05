@@ -5,28 +5,71 @@
 }
 #wrapper {
 	border: solid 1px black;
-	width: 48em;
-	height: 40em;
+	width: 800px;
+	height: 600px;
 	margin: 1em auto;
+
 }
 
 input[type="text"] {
-	font-size: 2em;
-	width: 2em;
-	height: 2em;
+	font-size: 24px;
+	width: 54px;
+	height: 54px;
 	border: solid 1px green;
-	padding: .5em;
+	padding: 8px;
 	text-transform: uppercase;
 	text-align: center;
 	margin-right: -6px;
 	margin-bottom: -1px;
 	position: absolute;
+}
+.tip {
+	position: absolute;
+	width: 54px;
+	height: 54px;
+	line-height: 54px;
+	border: solid 1px green;
+	text-align: center;
+	font-size: 10px;
+	padding: 2px;
+	text-transform: none;
+	display: inline-block;
+	vertical-align: middle;
+	z-index: 2;
+}
+
+.tip span {
+	display: inline-block;
+	vertical-align: middle;
+	line-height: 10px;
+}
+.left-arrow:after, .down-arrow:after, .right-arrow:after, .up-arrow:after {
+	display: block;
+	position: absolute;
+	z-index: 2;
+	font-size: 20px;
+}
+.right-arrow:after {
+	content: "\2192";
+	left: 52px;
+	top: 0px;
+}
+
+.down-arrow:after {
+	content: "\2193";	
+	top: 35px;
+	left: 18px;
+}
+
+.left-arrow:after {
+	content: "\2190";
+	top: 0;
+	left: -15px;
 
 }
 
-.x2 {
-	left: 2em;
-}
-.3y {
-	top: 3em;
+.up-arrow:after { 
+	content: "\2191";
+	bottom: 32px;
+	left: 15px;
 }
