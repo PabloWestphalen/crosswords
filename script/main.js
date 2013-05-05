@@ -1,4 +1,7 @@
-var words = prompt("Please enter a comma separated list of words\n\nEx: fish, ball, cat").replace(/ /g, "").split(",");
+//var words = prompt("Please enter a comma separated list of words\n\nEx: fish, ball, cat").replace(/ /g, "").split(",");
+//var words = ["please", "enter", "a", "comma", "separated", "list"];
+var words = "lorem ipsum dolor sit amet consectetur adpiscing elit".split(" ");
+words.sort();
 var startX = $('#wrapper').offset().left;
 var startY = $('#wrapper').offset().top;
 var boxSize = 54;
@@ -18,17 +21,10 @@ function buildGrid() {
 }
 
 function randomOrientation() {
-	switch(getRand(3)) {
-		case 1:
-			return "up";
-		case 2:
-			return "right";
-		case 3:
-			return "down";
-	}
+	return randomBool()?  "right" : "down";
 }
 
-function hasAvailableSpace(x, y, hookOrg, hookNew, word, isHorizontal) {
+function hasAvailableSpace(x, y, hookNew, word, isHorizontal) {
       	var begin = (isHorizontal? y : x) - (hookNew+1);
       	for(var i = begin; i <= begin + word.length; i++) {
       		var searchId = (isHorizontal? x : i)+'x'+(isHorizontal? i : x)+'y';
@@ -43,7 +39,10 @@ function hasAvailableSpace(x, y, hookOrg, hookNew, word, isHorizontal) {
       			console.log('skipped hook place ' + searchId);	
       		}
       	}
-      	return {x:(isHorizontal? x : begin), y:(isHorizontal? begin : y)};
+      	return {
+      				x: (isHorizontal? x : begin),
+      				y: (isHorizontal? begin : y)
+      			};
 }
 
 function renderWords() {
@@ -56,7 +55,6 @@ function renderWords() {
 	
 	main:
 	for(var i = 0; i < words.length; i++) {
-	//for(var i = 0; i < 4; i++) { //
 		var currentWord = words[i].toUpperCase();
 		var isHorizontal = randomBool();
 		wordStartX = getRand(gridSizeX);;
@@ -76,7 +74,7 @@ function renderWords() {
 					console.log('gonna hook to ' + hookX + 'x' + hookY + 'y');
 					isHorizontal = !wordObjects[j].isHorizontal;
 
-					result = hasAvailableSpace(hookX, hookY, hookOrg, k, searchWord, wordObjects[j].isHorizontal);
+					result = hasAvailableSpace(hookX, hookY, k, searchWord, wordObjects[j].isHorizontal);
 					console.log(result);
 
 					if(result) {
@@ -147,49 +145,51 @@ function randomBool() {
 	return Boolean(getRand(1));
 }
 
-renderWords();
-
-$('input').on('keypress', function(event) {
-	this.value = "";
-	var currentX = parseInt($(this).attr('id').split('x')[0]);
-	var currentY = parseInt($(this).attr('id').split('x')[1].replace('y', ''));
-	jumpToNext(currentX, currentY, event.shiftKey);
-});
-
-function jumpToNext(x, y, vertical) {
-	if(document.getElementById((x+1) + "x" + y + "y") && !vertical) {
+function jumpToNext(x, y, horizontal) {
+	if(document.getElementById((x+1) + "x" + y + "y") && horizontal) {
 		$('#' + (x+1) + "x" + y + "y").focus();
-	} else if(document.getElementById(x + "x" + (y+1) + "y") && vertical) {
+	} else if(document.getElementById(x + "x" + (y+1) + "y") && !horizontal) {
 		$('#' + x + "x" + (y+1) + "y").focus();
 	}
 }
 
-$('input').on('keydown', function(event) {
+//Events
+$('input').on('keypress', handleKeyPress);
+$('input').on('keydown', handleKeyDown);
+
+function handleKeyPress(event) {
+	this.value = "";
 	var currentX = parseInt($(this).attr('id').split('x')[0]);
 	var currentY = parseInt($(this).attr('id').split('x')[1].replace('y', ''));
+	jumpToNext(currentX, currentY, event.shiftKey);
+}
 
+function handleKeyDown(event) {
+	var currentX = parseInt($(this).attr('id').split('x')[0]);
+	var currentY = parseInt($(this).attr('id').split('x')[1].replace('y', ''));
+	var newX, newY;
 	switch(event.keyCode) {
     	case 37: //left
-    		if(document.getElementById((currentX-1) + "x" + currentY + "y")) {
-    			$('#' + (currentX-1) + "x" + currentY + "y").focus();
-    		}
-    		break;
+	    	newX = currentX-1;
+	    	newY = currentY;
+	   		break;
     	case 38: // up
-    		if(document.getElementById(currentX + "x" + (currentY-1) + "y")) {
-    			$('#' + currentX + "x" + (currentY-1) + "y").focus();
-    		}
+	    	newX = currentX;
+    		newY = currentY-1;
     		break;
     	case 39: // right
-    		if(document.getElementById((currentX+1) + "x" + currentY + "y")) {
-    			$('#' + (currentX+1) + "x" + currentY + "y").focus();
-    		}
-    		break;
+	    	newX = currentX+1;
+	    	newY = currentY;
+	    	break;
     	case 40: // down
-    		if(document.getElementById(currentX + "x" + (currentY+1) + "y")) {
-    			$('#' + currentX + "x" + (currentY+1) + "y").focus();
-    		}
-    		break;
+	    	newX = currentX;
+	    	newY = currentY+1;
+	    	break;
     }	
-});
 
+    if(document.getElementById(newX + "x" + newY + "y")) {
+    	$('#' + newX + "x" + newY + "y").focus();
+    }
+}
 
+renderWords();
