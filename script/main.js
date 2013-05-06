@@ -1,172 +1,202 @@
-//var words = prompt("Please enter a comma separated list of words\n\nEx: fish, ball, cat").replace(/ /g, "").split(",");
-//var words = ["please", "enter", "a", "comma", "separated", "list"];
-var words = "lorem ipsum dolor sit amet consectetur adpiscing elit".split(" ");
-words.sort();
-var startX = $('#wrapper').offset().left;
-var startY = $('#wrapper').offset().top;
-var boxSize = 54;
-var hIndex = 0;
-var vIndex = 0;
-var gridSizeX = 12;
-var gridSizeY = 10;
-
+var gridSizeX = 14;//Math.floor($(window).width() / 60)-1;
+var gridSizeY = 10;//Math.floor($(window).height() / 60)-1;
+var tabIndex = 1;
+var maximumPlacingAttempts = 10000;
+//var words = prompt("Please enter a comma separated list of words\n\nEx: fish, ball, cat").toUpperCase().replace(/ /g, "").split(",");
+var words = "lorem ipsum dolor sit amet consectetur adpiscing elit".toUpperCase().split(" ");
 var wordObjects = new Array();
+var grid = new Array(gridSizeY);
 
-function buildGrid() {
-	var grid = new Array(gridSizeX);
-	for(var i = 0; i < grid.length; i++) {
-		grid[i] = new Array(gridSizeY);
+$('#wrapper').css('width', (gridSizeX * 60)+2);
+$('#wrapper').css('height', (gridSizeY*60)+2);
+
+function setupGrid() {
+	for(var i = 0; i < gridSizeY; i++) {
+		grid[i] = new Array(gridSizeX);
+		for(var j = 0; j < gridSizeX; j++) {
+			$box = $('<div class="box" id="' + j + 'x' + i + 'y' + '"></div>');
+			$('#wrapper').append($box);
+		}
 	}
-	return grid;
 }
 
-function randomOrientation() {
-	return randomBool()?  "right" : "down";
+function getInitialCoords(word) {
+	var placingAttempts = 0;
+	while(++placingAttempts < maximumPlacingAttempts) {
+		var x = getRand(gridSizeX);
+		var y = getRand(gridSizeY);
+		var h = randomBool(); // horizontal flag
+		if(h) {
+			if(y == 0 || ((x+word.length) > (gridSizeX-1))) {
+				continue;
+			}
+		} else {
+			if(x == 0 || ((y+word.length) > (gridSizeY-1))) {
+				continue;
+			}
+		}
+		return {"x": x, "y": y, "isHorizontal": h};
+	}
+	return false; // gives up upon reaching maximum attempt count
 }
 
-function hasAvailableSpace(x, y, hookNew, word, isHorizontal) {
-      	var begin = (isHorizontal? y : x) - (hookNew+1);
-      	for(var i = begin; i <= begin + word.length; i++) {
-      		var searchId = (isHorizontal? x : i)+'x'+(isHorizontal? i : x)+'y';
-      		if(i != (isHorizontal? y : x)) {
-      			if(!document.getElementById(searchId)) {
-      				console.log(searchId + ' is empty');		
-      			} else {
-      				console.log(searchId + ' is NOT empty');
-      				return false;
-      			}
-      		} else {
-      			console.log('skipped hook place ' + searchId);	
-      		}
-      	}
-      	return {
-      				x: (isHorizontal? x : begin),
-      				y: (isHorizontal? begin : y)
-      			};
-}
+function getHookCoords(word) {
+	var isHorizontal, skips =[];
 
-function renderWords() {
-	var word = words[getRand(words.length-1)];
-	var orientation = randomOrientation();	
-	var wordStartX;
-	var wordStartY;
-	var hookX;
-	var hookY;
-	
-	main:
-	for(var i = 0; i < words.length; i++) {
-		var currentWord = words[i].toUpperCase();
-		var isHorizontal = randomBool();
-		wordStartX = getRand(gridSizeX);;
-		wordStartY = getRand(gridSizeY);	
-		outer2:
-		for(var j = 0; j < wordObjects.length; j++) { // walks through the already rendered words
-			searchWord = wordObjects[j].word.toUpperCase();
-			for(var k = 0; k < currentWord.length; k++) { // walks through each character of the current word
-				var charIndex = searchWord.indexOf(currentWord.charAt(k));
-				if(charIndex >= 0) {
-					console.log("going to hook " + currentWord + " to the " + (charIndex+1)
-						+ "th letter of " + searchWord + ", which is " + searchWord.charAt(charIndex));
+	for(var i = 0; i < word.length; i++) { // chars of the current word
+		searchWords:
+		for(var j = 0; j < wordObjects.length; j++) { // words already rendered
+			if(typeof wordObjects[j] == "undefined"){
+				continue;
+			}
+			var searchWord = wordObjects[j].word;
 
-					hookOrg = wordObjects[j].letters[charIndex].x;
-					hookX = wordObjects[j].letters[charIndex].x;
-					hookY = wordObjects[j].letters[charIndex].y;
-					console.log('gonna hook to ' + hookX + 'x' + hookY + 'y');
-					isHorizontal = !wordObjects[j].isHorizontal;
+			if(word.charAt(i) == "R" && wordObjects[j].word == "AMET") {
+				console.log("stopme");
+			}
 
-					result = hasAvailableSpace(hookX, hookY, k, searchWord, wordObjects[j].isHorizontal);
-					console.log(result);
+			console.log("seeing if i can hook  " + word + "'s [" + word.charAt(i) + "] char to " + wordObjects[j].word);
+		
+			var matchIndex = searchWord.indexOf(word.charAt(i));
+			if(matchIndex >= 0) {
+				console.log("opa, trying to hook to " + wordObjects[j].word);
+				if(wordObjects[j].word == "lorem") {
+					console.log(wordObjects[j].letters);
+				}
+				var x = wordObjects[j].letters[matchIndex].x;
+				var y = wordObjects[j].letters[matchIndex].y;
+				isHorizontal = !wordObjects[j].isHorizontal;
+				var begin = isHorizontal? x-(i+1) : y-(i+1);
+				var end = begin+word.length;
 
-					if(result) {
-						wordStartX = result.x
-						wordStartY = result.y
-						break;
-					} else {
-						console.error('couldn\'t place ' + currentWord);
-						continue main;
+
+				for(var k = begin; k <= end; k++) {
+					var skipCount = 0;
+					var checkY = (isHorizontal? y : k);
+					var checkX = (isHorizontal? k : x);
+
+					if(checkX < 0 || checkY < 0 || end+1 > (isHorizontal? gridSizeX : gridSizeY)) {
+						continue searchWords; // o começo estouraria a grid
 					}
+					if(typeof grid[checkY] != "object") {
+						continue searchWords;
+					}
+
+					console.log("checking " + checkX + 'x' + checkY + "y");
+
+					
+					if(typeof grid[checkY][checkX] != "undefined") {
+						console.log(checkX + 'x' + checkY + "y of " + word + " is fucking defined!");
+						if(k == end) {
+							if(grid[checkY][checkX].isTip) {
+								console.log("bummer. found a tip on " + checkX + 'x' + checkY + 'y');
+								continue searchWords; 
+							}
+						}
+						if(grid[checkY][checkX] == word.charAt(k-begin-1)) {
+							skips[skipCount++] = (k-begin-1); 
+							console.log("must skip the " + skips + " of " + word);
+							
+						} else {
+							console.log("can't match [" + word.charAt(k-begin-1) + "] to at " + checkX + 'x' + checkY + 'y');
+							continue searchWords; 
+						}
+					} else {
+
+					}		
+					
+				}
+
+				return {
+					"x": isHorizontal? begin : x,
+					"y": isHorizontal? y : begin,
+					"isHorizontal": isHorizontal,
+					"skip": skips
 				}
 			}
 		}
+	}
+	return false;
+}
 
-		var $word = $('<div class="tip ' + (isHorizontal? "right" : "down") + '-arrow" id="'
-			+ wordStartX + 'x' + wordStartY + 'y' + '" ><span>' + words[i] + '</span></div>',
-			{
-				css: {
-					left: (startX + (boxSize * wordStartX)) + 'px',
-					top: (startY + (boxSize * wordStartY)) + 'px'
-				}
-			});
-		$('#wrapper').append($word);
-
-		wordObjects[i] = {
-			word: words[i],
-			isHorizontal: isHorizontal
+function placeWords() {
+	var startX, startY, is, isHorizontal, orientation, currentWord;
+	mainLoop:
+	for(var i = 0; i < words.length; i++) { // walks through each word
+		currentWord = words[i];
+		if(i == 0) {
+			coords = getInitialCoords(currentWord);
+		} else {
+			coords = getHookCoords(currentWord);
 		}
-		
+
+
+		if(coords) {
+			startX = coords.x;
+			startY = coords.y;
+			isHorizontal = coords.isHorizontal;
+		} else {
+			console.log("##couldn't place " + currentWord);
+			continue mainLoop; // give up trying to hook the current word
+		}
+	
+
+		//Draw tip
+		$tip = $('<span class="tip ' + (isHorizontal? "right" : "down") + '-arrow">' + currentWord + '</span>');
+		$('#' + startX + 'x' + startY + 'y').append($tip);
+		grid[startY][startX] = {"isTip":true};
+		//Draw word
+
 		var letters = new Array();
 
-		for(var j = 0; j < words[i].length; j++) {
+		for(var j = 0; j < currentWord.length; j++) { // walks through each char of the current word
 			letters[j] = {
-				letter: words[i].charAt(j),
-				x: isHorizontal? wordStartX+1 : wordStartX,
-				y: isHorizontal? wordStartY : wordStartY+1 
+					"letter": currentWord.charAt(j),
+					"x": (isHorizontal? startX+1 : startX),
+					"y": (isHorizontal? startY : startY+1)
 			}
 
-			$letter = $('<input type="text" value="' + words[i].charAt(j)
-				         + '"maxlength="1" id="' + (isHorizontal? ++wordStartX : wordStartX)
-				         + 'x' + (isHorizontal? wordStartY : ++wordStartY) + 'y" />', {
-				css:{
-					left: (startX + (boxSize * wordStartX)) + 'px',
-					top: (startY + (boxSize * wordStartY)) + 'px'
-				}
-			});
-			if(wordStartX == hookX && wordStartY == hookY) {
-				
+			if(!coords.skip || (coords.skip && $.inArray(j, coords.skip) == -1)) {
+				grid[(isHorizontal? startY : startY+1)][(isHorizontal? startX+1 : startX)] = currentWord.charAt(j);
+				console.log(tabIndex);
+				$letter = $('<input type="text" tabindex="' + tabIndex++ + '" class="box" data-i="'+ i + '" maxlength="1"></div>');
+				$('#' + (isHorizontal? ++startX : startX) + 'x'
+						+ (isHorizontal? startY : ++startY) + 'y').append($letter);
 			} else {
-				$('#wrapper').append($letter);	
+				if(isHorizontal) {
+					startX++;
+				} else {
+					startY++;
+				}
 			}
-			
-		}
-		wordObjects[i].letters = letters;
-	}
-	console.log(wordObjects);
-}
-
-function getRand(limit) {
-	if(limit) {
-		return Math.round(Math.random() * limit-1)+1;
-	} else {
-		return Math.round(Math.random() * 13);	
-	}
-}	
-
-function randomBool() {
-	return Boolean(getRand(1));
-}
-
-function jumpToNext(x, y, horizontal) {
-	if(document.getElementById((x+1) + "x" + y + "y") && horizontal) {
-		$('#' + (x+1) + "x" + y + "y").focus();
-	} else if(document.getElementById(x + "x" + (y+1) + "y") && !horizontal) {
-		$('#' + x + "x" + (y+1) + "y").focus();
+		} console.log("--------");
+		wordObjects[i] = {"word": currentWord, "isHorizontal": isHorizontal, "startX": startX,
+						 "startY": startY,"letters": letters};
 	}
 }
 
-//Events
-$('input').on('keypress', handleKeyPress);
-$('input').on('keydown', handleKeyDown);
+function bindEvents() {
+	$('input').on('keypress', handleKeyPress);
+	$('input').on('keydown', handleKeyDown);
+}
 
 function handleKeyPress(event) {
-	this.value = "";
-	var currentX = parseInt($(this).attr('id').split('x')[0]);
-	var currentY = parseInt($(this).attr('id').split('x')[1].replace('y', ''));
-	jumpToNext(currentX, currentY, event.shiftKey);
+	if(event.keyCode < 37 || event.keyCode > 40) {
+		this.value = "";	
+	}
+	var x = parseInt($(this).parent().attr('id').split('x')[0]);
+	var y = parseInt($(this).parent().attr('id').split('x')[1].replace('y', ''));
+
+	if(document.getElementById(x + 'x' + (y+1) + 'y') && event.shiftKey) { // moving vertically
+		$('#' + x + 'x' + (y+1) + 'y').children()[0].focus();
+	} else if(document.getElementById((x+1) + 'x' + y + 'y') && !event.shiftKey) { // moving horizontally
+		$('#' + (x+1) + 'x' + y + 'y').children()[0].focus();
+	}
 }
 
 function handleKeyDown(event) {
-	var currentX = parseInt($(this).attr('id').split('x')[0]);
-	var currentY = parseInt($(this).attr('id').split('x')[1].replace('y', ''));
+	var currentX = parseInt($(this).parent().attr('id').split('x')[0]);
+	var currentY = parseInt($(this).parent().attr('id').split('x')[1].replace('y', ''));
 	var newX, newY;
 	switch(event.keyCode) {
     	case 37: //left
@@ -188,8 +218,14 @@ function handleKeyDown(event) {
     }	
 
     if(document.getElementById(newX + "x" + newY + "y")) {
-    	$('#' + newX + "x" + newY + "y").focus();
+    	$('#' + newX + "x" + newY + "y").children()[0].focus();
     }
 }
 
-renderWords();
+function play() {
+	setupGrid();
+	placeWords();
+	bindEvents();
+}
+
+play();
