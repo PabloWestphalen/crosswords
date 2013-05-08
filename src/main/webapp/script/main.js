@@ -12,13 +12,16 @@ $('#wrapper').css('height', (gridSizeY*60)+2);
 var html;
 
 function loadWords() {
-	pt = "getwords?source=dic-aberto";
-	en = "getwords?source=word-generator";
-	url = "EN"//prompt("PT or EN?");
-	if(url == "PT") {
-		url = pt;
-	} else if(url == "EN") {
-		url = en;
+	pt1 = "getwords?source=dic-aberto";
+	pt2 = "getwords?source=coquetel";
+	en1 = "getwords?source=word-generator";
+	url = "pt2";//prompt("PT or EN?");
+	if(url == "pt1") {
+		url = pt1;
+	} else if(url == "pt2") {
+		url = pt2;
+	} else if(url == "en1") {
+		url = en1;
 	}
 	$.ajax({
 		type: "GET",

@@ -2,6 +2,7 @@ package com.jin.crosswords.apis;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -34,23 +35,25 @@ public class GetWords extends HttpServlet {
 		if (source != null) {
 			ArrayList<HashMap<String, String>> words = new ArrayList<HashMap<String, String>>();
 			if (source.equals("dic-aberto")) {
-				words = dicionarioAbertoSearch(fetchSize);
+				words = dicionarioAbertoSearch();
 			}
 			if (source.equals("word-generator")) {
-				words = wordGeneratorSearch(fetchSize);
+				words = wordGeneratorSearch();
+			}
+			if(source.equals("coquetel")) {
+				words = coquetelSearch();
 			}
 			if (words != null) {
 				System.out.println(words);
 				PrintWriter pw = resp.getWriter();
 				resp.setHeader("Content-Type", "application/json");
 				new ObjectMapper().writeValue(pw, words);
-			}//teste2
+			}// teste2
 
 		}
 	}
 
-	private static ArrayList<HashMap<String, String>> dicionarioAbertoSearch(
-			int fetchSize) {
+	private static ArrayList<HashMap<String, String>> dicionarioAbertoSearch() {
 		ArrayList<HashMap<String, String>> words = new ArrayList<HashMap<String, String>>();
 		while (words.size() < fetchSize) {
 			try {
@@ -79,10 +82,10 @@ public class GetWords extends HttpServlet {
 							winner = i;
 						}
 					}
-					if(winner == -1) {
+					if (winner == -1) {
 						continue;
 					}
-					
+
 					System.out.println("Winner definition: " + arr[winner]);
 					HashMap<String, String> m = new HashMap<>();
 					m.put("word", word);
@@ -96,7 +99,7 @@ public class GetWords extends HttpServlet {
 		return words;
 	}
 
-	private static ArrayList<HashMap<String, String>> wordGeneratorSearch(int fetchSize) {
+	private static ArrayList<HashMap<String, String>> wordGeneratorSearch() {
 		ArrayList<HashMap<String, String>> words = new ArrayList<HashMap<String, String>>();
 		String url = "http://www.wordgenerator.net/application/p.php?id=dictionary_words&type=50_definition&spaceflag=false";
 		while (words.size() < fetchSize) {
@@ -106,27 +109,97 @@ public class GetWords extends HttpServlet {
 				String src = body.html();
 				String find = "(.*)(\\n<br />\\n<p style=\\\"text-align: center;font-size: 12px;font-weight: 500;\"><b>&nbsp;Definition:</b> )(.*)(</p>,)";
 				String replace = "$1__[def]__$3__[word]__";
-				String[] wordTokens = src.replaceAll(find, replace).split("__\\[word\\]__");
-				for(String word : wordTokens) {
+				String[] wordTokens = src.replaceAll(find, replace).split(
+						"__\\[word\\]__");
+				for (String word : wordTokens) {
 					HashMap<String, String> m = new HashMap<>();
 					String[] word_def = word.split("__\\[def\\]__");
 					String wordString = word_def[0];
 					String wordDef = word_def[1];
-					
-					if(wordDef.length() > maxChars) { // definition too long 
+
+					if (wordDef.length() > maxChars) { // definition too long
 						continue;
 					}
-					if(wordDef.startsWith("See")) {
+					if (wordDef.startsWith("See")) {
 						continue;
 					}
-					
+
 					m.put("word", wordString);
 					m.put("definition", wordDef);
 					words.add(m);
 					System.out.println(m);
 				}
 
-			} catch (Exception e) {}			
+			} catch (Exception e) {
+			}
+		}
+		return words;
+	}
+
+	private static ArrayList<HashMap<String, String>> coquetelSearch() {
+		ArrayList<HashMap<String, String>> words = new ArrayList<HashMap<String, String>>();
+		String url = "http://coquetel.uol.com.br/upload/jogos/DiretasClassica/";
+		while (words.size() < fetchSize) {
+			try {
+				int dificuldade = (int) (Math.random() * 4);
+				if (dificuldade == 0) {
+					url += "Simples/OURO00";
+					int game = (int) (Math.random() * 74) + 1;
+					if (game < 10) {
+						url += "0" + game;
+					} else {
+						url += game;
+					}
+				} else if (dificuldade == 1) {
+					url += "Facil/F0";
+					int game = (int) (Math.random() * 199) + 1;
+					if (game < 10) {
+						url += "00" + game;
+					} else if (game < 100) {
+						url += "0" + game;
+					} else {
+						url += game;
+					}
+				} else if (dificuldade == 2) {
+					url += "Medio/M0";
+					int game = (int) (Math.random() * 149) + 1;
+					if (game < 10) {
+						url += "00" + game;
+					} else if (game < 100) {
+						url += "0" + game;
+					} else {
+						url += game;
+					}
+				} else if (dificuldade == 3) {
+					url += "Dificil/D00";
+					int game = (int) (Math.random() * 59) + 1;
+					if (game < 10) {
+						url += "0" + game;
+					} else {
+						url += game;
+					}
+				}
+				url += ".xml";
+				Document doc = Jsoup.parse(new URL(url).openStream(),
+						"ISO-8859-1", url);
+				for (Element e : doc.select("cell")) {
+					String definition = e.attr("Texto");
+					if (definition.equals("")) {
+						continue;
+					}
+					String word = e.select("resposta").attr("Texto");
+					if (word.equals("")) {
+						continue;
+					}
+					HashMap<String, String> m = new HashMap<>();
+					m.put("word", word);
+					m.put("definition", definition);
+					words.add(m);
+					System.out.println(m);
+				}
+
+			} catch (Exception e) {
+			}
 		}
 		return words;
 	}
