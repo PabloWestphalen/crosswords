@@ -44,7 +44,7 @@ public class GetWords extends HttpServlet {
 				PrintWriter pw = resp.getWriter();
 				resp.setHeader("Content-Type", "application/json");
 				new ObjectMapper().writeValue(pw, words);
-			}//teste
+			}//teste2
 
 		}
 	}
